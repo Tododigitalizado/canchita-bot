@@ -11,7 +11,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.69.0",
+    "@anthropic-ai/sdk": "0.69.0",
     "@whiskeysockets/baileys": "^6.7.9",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
