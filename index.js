@@ -20,7 +20,13 @@ const {
 const QRCode = require("qrcode");
 const qrcodeTerminal = require("qrcode-terminal");
 const pino = require("pino");
+const Anthropic = require("@anthropic-ai/sdk");
 const store = require("./store");
+
+// Cliente de Claude — solo si está la API key
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
 
 const AUTH_DIR = process.env.AUTH_DIR || "auth";
 const WA_AUTH = path.join(AUTH_DIR, "wa");          // credenciales de WhatsApp
@@ -32,7 +38,9 @@ let runtime = store.load();      // config (mensajes) actual
 let sock = null;
 let currentQR = null;            // QR como data URL (PNG)
 let connected = false;
-const lastReply = new Map();     // anti-spam por contacto
+const lastReply = new Map();     // anti-spam por contacto (último auto-mensaje)
+// Estado de conversación por contacto: { welcomed, lastTs, history: [{role, content}] }
+const conversations = new Map();
 
 // ─── Lógica de respuestas ─────────────────────────────────────────────
 function withinBusinessHours() {
@@ -41,12 +49,17 @@ function withinBusinessHours() {
   return h >= runtime.businessHours.start && h < runtime.businessHours.end;
 }
 
-function buildReply(textLower) {
+// Busca una respuesta por palabra clave (instantánea y gratis)
+function matchKeyword(textLower) {
   for (const rule of runtime.keywordReplies || []) {
     if ((rule.keywords || []).some((k) => textLower.includes(String(k).toLowerCase()))) {
       return rule.reply.replaceAll("{APP_URL}", runtime.appUrl);
     }
   }
+  return null;
+}
+
+function welcomeText() {
   return runtime.welcomeMessage.replaceAll("{APP_URL}", runtime.appUrl);
 }
 
@@ -54,6 +67,39 @@ function onCooldown(jid) {
   const last = lastReply.get(jid);
   if (!last) return false;
   return (Date.now() - last) / 3600000 < runtime.cooldownHours;
+}
+
+// Respuesta con IA (Claude) usando la info del negocio. Devuelve texto o null.
+async function aiReply(jid, userText) {
+  if (!anthropic || runtime.aiEnabled === false) return null;
+  const conv = conversations.get(jid) || { welcomed: true, history: [] };
+
+  // Historial corto (últimos 6 turnos) para dar contexto
+  const history = (conv.history || []).slice(-6);
+  history.push({ role: "user", content: userText });
+
+  const system = runtime.aiSystemPrompt.replaceAll("{APP_URL}", runtime.appUrl);
+
+  try {
+    const res = await anthropic.messages.create({
+      model: runtime.aiModel || "claude-haiku-4-5",
+      max_tokens: 320,
+      // El system prompt es estable → se cachea (más barato en repeticiones)
+      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+      messages: history,
+    });
+    const text = res.content.find((b) => b.type === "text")?.text?.trim();
+    if (!text) return null;
+
+    // Guardar en el historial de la conversación
+    history.push({ role: "assistant", content: text });
+    conv.history = history;
+    conversations.set(jid, conv);
+    return text;
+  } catch (err) {
+    console.error("Error de Claude:", err?.message || err);
+    return null;
+  }
 }
 
 // ─── Conexión a WhatsApp ──────────────────────────────────────────────
@@ -110,15 +156,38 @@ async function startSock() {
           msg.message.extendedTextMessage?.text ||
           msg.message.imageMessage?.caption || "";
         const textLower = text.toLowerCase().trim();
+        if (!text) continue;
 
         if (!withinBusinessHours()) continue;
-        if (onCooldown(jid)) continue;
 
-        const reply = buildReply(textLower);
+        const conv = conversations.get(jid) || { welcomed: false, history: [] };
+        let reply = null;
+
+        // 1) Palabra clave → respuesta instantánea (gratis)
+        const kw = matchKeyword(textLower);
+        if (kw) {
+          reply = kw;
+        }
+        // 2) Primer contacto → mensaje de bienvenida automático
+        else if (!conv.welcomed) {
+          reply = welcomeText();
+        }
+        // 3) Ya saludado y sigue escribiendo → responde la IA (Claude)
+        else {
+          reply = await aiReply(jid, text);
+          // Si la IA no está disponible, reenviar bienvenida solo si pasó el cooldown
+          if (!reply && !onCooldown(jid)) reply = welcomeText();
+        }
+
+        if (!reply) continue;
+
+        conv.welcomed = true;
+        conversations.set(jid, conv);
+
         await new Promise((r) => setTimeout(r, 800));
         await sock.sendMessage(jid, { text: reply });
         lastReply.set(jid, Date.now());
-        console.log(`💬 Respondido a ${msg.pushName || jid.split("@")[0]}`);
+        console.log(`💬 Respondido a ${msg.pushName || jid.split("@")[0]}${kw ? " (palabra clave)" : conv.history?.length ? " (IA)" : " (bienvenida)"}`);
       } catch (err) {
         console.error("Error procesando mensaje:", err?.message || err);
       }
