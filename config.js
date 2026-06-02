@@ -34,6 +34,11 @@ module.exports = {
   // (evita spamear a quien escribe varios mensajes seguidos)
   cooldownHours: Number(process.env.COOLDOWN_HOURS || 6),
 
+  // ── Atención humana (handoff) ──
+  // Cuando VOS le escribís manualmente a un cliente desde el celular,
+  // el bot se calla en esa conversación durante estas horas.
+  handoffHours: Number(process.env.HANDOFF_HOURS || 12),
+
   // ── Respuestas por palabra clave (opcional) ──
   // Si el mensaje del cliente CONTIENE alguna de esas palabras, responde ESE texto
   // en lugar del mensaje de bienvenida. El primero que coincida gana.

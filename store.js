@@ -10,7 +10,7 @@ const AUTH_DIR = process.env.AUTH_DIR || "auth";
 const FILE = path.join(AUTH_DIR, "bot-config.json");
 
 // Campos que se pueden editar desde el dashboard
-const EDITABLE = ["appUrl", "welcomeMessage", "reservationThankYou", "cooldownHours", "keywordReplies", "businessHours", "aiEnabled", "aiSystemPrompt"];
+const EDITABLE = ["appUrl", "welcomeMessage", "reservationThankYou", "cooldownHours", "handoffHours", "keywordReplies", "businessHours", "aiEnabled", "aiSystemPrompt"];
 
 function ensureDir() {
   try { fs.mkdirSync(AUTH_DIR, { recursive: true }); } catch {}

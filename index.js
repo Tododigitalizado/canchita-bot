@@ -39,8 +39,10 @@ let sock = null;
 let currentQR = null;            // QR como data URL (PNG)
 let connected = false;
 const lastReply = new Map();     // anti-spam por contacto (último auto-mensaje)
-// Estado de conversación por contacto: { welcomed, lastTs, history: [{role, content}] }
+// Estado de conversación por contacto: { welcomed, lastTs, history, pausedUntil }
 const conversations = new Map();
+// IDs de mensajes que mandó el BOT (para no confundirlos con respuestas manuales del admin)
+const botSentIds = new Set();
 
 // ─── Lógica de respuestas ─────────────────────────────────────────────
 function withinBusinessHours() {
@@ -155,13 +157,31 @@ async function startSock() {
   });
 
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    if (type !== "notify") return;
     for (const msg of messages) {
       try {
-        if (!msg.message || msg.key.fromMe) continue;
+        if (!msg.message) continue;
         const jid = msg.key.remoteJid || "";
         if (jid === "status@broadcast") continue;
         if (runtime.ignoreGroups && jid.endsWith("@g.us")) continue;
+
+        // ── Mensaje SALIENTE (lo mandó el bot o el admin desde el celu) ──
+        if (msg.key.fromMe) {
+          const id = msg.key.id;
+          if (id && botSentIds.has(id)) {
+            botSentIds.delete(id);   // lo mandó el bot → ignorar
+          } else {
+            // Lo mandó el ADMIN manualmente → pausar el bot en esa conversación
+            const handoffH = Number(runtime.handoffHours ?? 12);
+            const conv = conversations.get(jid) || { welcomed: true, history: [] };
+            conv.pausedUntil = Date.now() + handoffH * 3600000;
+            conversations.set(jid, conv);
+            console.log(`👤 Intervención humana en ${jid.split("@")[0]} — bot en pausa ${handoffH}h`);
+          }
+          continue;
+        }
+
+        // De acá para abajo, solo mensajes ENTRANTES nuevos
+        if (type !== "notify") continue;
 
         const text =
           msg.message.conversation ||
@@ -173,6 +193,13 @@ async function startSock() {
         if (!withinBusinessHours()) continue;
 
         const conv = conversations.get(jid) || { welcomed: false, history: [] };
+
+        // Si vos interviniste manualmente hace poco → el bot no responde (lo atendés vos)
+        if (conv.pausedUntil && Date.now() < conv.pausedUntil) {
+          console.log(`🤫 Bot en pausa (atención humana) para ${jid.split("@")[0]}`);
+          continue;
+        }
+
         let reply = null;
         let tag = "";
 
@@ -205,7 +232,8 @@ async function startSock() {
         conversations.set(jid, conv);
 
         await new Promise((r) => setTimeout(r, 800));
-        await sock.sendMessage(jid, { text: reply });
+        const sent = await sock.sendMessage(jid, { text: reply });
+        if (sent?.key?.id) botSentIds.add(sent.key.id);   // marcar como enviado por el bot
         lastReply.set(jid, Date.now());
         console.log(`💬 Respondido a ${msg.pushName || jid.split("@")[0]}${tag}`);
       } catch (err) {
