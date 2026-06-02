@@ -22,6 +22,14 @@ module.exports = {
     `📅 Elegís día y horario, ves la disponibilidad en vivo y listo.\n\n` +
     `_Si necesitás algo más, en breve te responde una persona._ 🙌`,
 
+  // ── Mensaje cuando el cliente YA reservó (manda el mensaje de la app) ──
+  // Se responde con un agradecimiento en vez de reenviar el link.
+  reservationThankYou:
+    process.env.RESERVATION_THANKYOU ||
+    `¡Muchas gracias por elegirnos! 🙌\n\n` +
+    `Tu reserva quedó registrada. En breve la confirmamos. 🎉\n\n` +
+    `¡Te esperamos pronto en *La Canchita del Cani*! ⚽🎂`,
+
   // ── No repetir el auto-mensaje a la misma persona por X horas ──
   // (evita spamear a quien escribe varios mensajes seguidos)
   cooldownHours: Number(process.env.COOLDOWN_HOURS || 6),
@@ -86,7 +94,8 @@ module.exports = {
     `- Si preguntan precios, horarios, cómo reservar, qué incluye, etc., respondé con los datos de arriba.\n` +
     `- SIEMPRE que tenga sentido, invitá a reservar pasando el link de la app: {APP_URL}\n` +
     `- Si te preguntan algo que no sabés (algo muy específico o personal), decí que en breve los atiende una persona del local.\n` +
-    `- No inventes datos, precios ni horarios que no estén acá.`,
+    `- No inventes datos, precios ni horarios que no estén acá.\n` +
+    `- IMPORTANTE: si el mensaje indica que la persona YA hizo una reserva (menciona "Reserva #", seña, comprobante, o que ya reservó), NO le mandes el link de nuevo. Agradecele cálidamente por elegirnos y decile que la reserva quedó registrada y que la esperamos pronto.`,
 
   // Modelo de Claude (Haiku = el más económico)
   aiModel: process.env.AI_MODEL || "claude-haiku-4-5",

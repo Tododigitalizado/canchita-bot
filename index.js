@@ -63,6 +63,18 @@ function welcomeText() {
   return runtime.welcomeMessage.replaceAll("{APP_URL}", runtime.appUrl);
 }
 
+// Detecta el mensaje automático que manda la app cuando alguien YA reservó
+// (trae "Reserva #", "Seña enviada", "comprobante" o "pago en efectivo").
+function isReservationMessage(textLower) {
+  const markers = ["reserva #", "seña enviada", "sena enviada", "comprobante", "pago en efectivo", "quiero reservar el salón", "quiero reservar el salon"];
+  return markers.some((m) => textLower.includes(m));
+}
+
+function thankYouText() {
+  return (runtime.reservationThankYou || "¡Muchas gracias por elegirnos! 🙌 Tu reserva quedó registrada. Te esperamos pronto 🎉")
+    .replaceAll("{APP_URL}", runtime.appUrl);
+}
+
 function onCooldown(jid) {
   const last = lastReply.get(jid);
   if (!last) return false;
@@ -162,21 +174,29 @@ async function startSock() {
 
         const conv = conversations.get(jid) || { welcomed: false, history: [] };
         let reply = null;
+        let tag = "";
 
+        // 0) El cliente YA reservó (mandó el mensaje de la app) → agradecer, NO mandar el link
+        if (isReservationMessage(textLower)) {
+          reply = thankYouText();
+          tag = " (agradecimiento reserva)";
+        }
         // 1) Palabra clave → respuesta instantánea (gratis)
-        const kw = matchKeyword(textLower);
-        if (kw) {
-          reply = kw;
+        else if (matchKeyword(textLower)) {
+          reply = matchKeyword(textLower);
+          tag = " (palabra clave)";
         }
         // 2) Primer contacto → mensaje de bienvenida automático
         else if (!conv.welcomed) {
           reply = welcomeText();
+          tag = " (bienvenida)";
         }
-        // 3) Ya saludado y sigue escribiendo → responde la IA (Claude)
+        // 3) Ya saludado y sigue escribiendo → responde la IA (Claude) SOLO si está activada.
+        //    Si la IA está apagada, el bot no responde (lo atiende una persona).
         else {
-          reply = await aiReply(jid, text);
-          // Si la IA no está disponible, reenviar bienvenida solo si pasó el cooldown
-          if (!reply && !onCooldown(jid)) reply = welcomeText();
+          const aiOn = anthropic && runtime.aiEnabled !== false;
+          if (aiOn) { reply = await aiReply(jid, text); tag = " (IA)"; }
+          // Si la IA está apagada o no disponible → no responder.
         }
 
         if (!reply) continue;
@@ -187,7 +207,7 @@ async function startSock() {
         await new Promise((r) => setTimeout(r, 800));
         await sock.sendMessage(jid, { text: reply });
         lastReply.set(jid, Date.now());
-        console.log(`💬 Respondido a ${msg.pushName || jid.split("@")[0]}${kw ? " (palabra clave)" : conv.history?.length ? " (IA)" : " (bienvenida)"}`);
+        console.log(`💬 Respondido a ${msg.pushName || jid.split("@")[0]}${tag}`);
       } catch (err) {
         console.error("Error procesando mensaje:", err?.message || err);
       }
