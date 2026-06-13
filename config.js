@@ -69,6 +69,17 @@ module.exports = {
         `📍 Te esperamos en *La Canchita del Cani*.\n\n` +
         `Reservá tu turno online acá 👇\n{APP_URL}`,
     },
+    {
+      keywords: [
+        "cuanto antes", "cuánto antes", "antes puedo ir", "antes puedo entrar",
+        "entregan", "entrega", "se entrega", "a que hora puedo ir", "a qué hora puedo ir",
+        "acomodar", "decorar", "ambientar", "armar", "puedo ir antes",
+        "anticipacion", "anticipación", "tiempo antes", "minutos antes", "horas antes"
+      ],
+      reply:
+        `🎂 ¡Hola! Para que puedas acomodar/decorar, te entregamos el salón *45 minutos antes* del horario reservado.\n\n` +
+        `Cualquier consulta más, escribinos. ¡Te esperamos! 🙌`,
+    },
   ],
 
   // ── Horario en el que el bot responde (opcional) ──
@@ -93,6 +104,7 @@ module.exports = {
     `- ⚽ Fútbol 5: $20.000 el turno de 1 hora. Se paga en el local. Horarios de 9 a 23hs.\n` +
     `- 🎂 Eventos/Cumpleaños: salón completo. 2 horas $80.000 o 3 horas $100.000. Requiere seña del 50% por transferencia. Horarios de 10 a 22hs.\n` +
     `- El salón incluye: mesas, +25 sillas, asador, 2 heladeras, cocina, horno eléctrico, pava eléctrica, panchera y wifi.\n` +
+    `- ENTREGA DEL SALÓN: el día del evento entregamos el salón *45 minutos antes* del horario reservado, para que la persona pueda acomodar/decorar/ambientar. Si te preguntan "¿cuánto antes puedo ir?", "¿a qué hora puedo entrar para decorar?", "¿con cuánta anticipación se entrega?" o similar, respondé que se entrega 45 minutos antes del horario reservado.\n` +
     `- Para reservar (ver disponibilidad en vivo y elegir día/hora) se usa la app: {APP_URL}\n\n` +
     `CÓMO RESPONDER:\n` +
     `- Hablá en español rioplatense, amable y breve (2-4 líneas máximo). Usá algún emoji.\n` +
