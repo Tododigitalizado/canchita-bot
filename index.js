@@ -292,6 +292,42 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Enviar mensaje al cliente DESDE la cuenta del canchita
+  // body: { phone: "5493471234567" | "+54...", message: "texto" }
+  if (url === "/send" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const { phone, message } = JSON.parse(body || "{}");
+        if (!phone || !message) return sendJSON(res, 400, { error: "faltan phone o message" });
+        if (!sock || !connected)  return sendJSON(res, 503, { error: "bot no conectado" });
+
+        // Normalizar el teléfono a JID — solo dígitos, sin '+'
+        let digits = String(phone).replace(/\D/g, "");
+        if (digits.startsWith("00")) digits = digits.slice(2);
+        // Si vino con código de país AR sin el "9" móvil (ej: 5434712...), agregarlo
+        if (digits.startsWith("54") && !digits.startsWith("549") && digits.length >= 10) {
+          digits = "549" + digits.slice(2);
+        }
+        // Si vino sin código de país (ej: 3472625320), asumir AR móvil
+        if (!digits.startsWith("54") && digits.length >= 8) {
+          digits = "549" + (digits.startsWith("0") ? digits.slice(1) : digits);
+        }
+        const jid = `${digits}@s.whatsapp.net`;
+
+        const sent = await sock.sendMessage(jid, { text: message });
+        if (sent && sent.key && sent.key.id) botSentIds.add(sent.key.id);
+        console.log(`📤 Mensaje manual enviado a ${digits}`);
+        return sendJSON(res, 200, { ok: true, jid, id: sent && sent.key ? sent.key.id : null });
+      } catch (err) {
+        console.error("Error enviando mensaje:", err);
+        return sendJSON(res, 500, { error: String(err && err.message ? err.message : err) });
+      }
+    });
+    return;
+  }
+
   // Desvincular (borra la sesión y genera un QR nuevo)
   if (url === "/logout" && req.method === "POST") {
     try { fs.rmSync(WA_AUTH, { recursive: true, force: true }); } catch {}
