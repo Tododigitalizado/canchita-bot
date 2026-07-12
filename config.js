@@ -43,8 +43,26 @@ module.exports = {
   // Si el mensaje del cliente CONTIENE alguna de esas palabras, responde ESE texto
   // en lugar del mensaje de bienvenida. El primero que coincida gana.
   keywordReplies: [
+    // ⚠️ ESTA REGLA VA PRIMERA — así "cuánto tiempo antes" o "decorar el cumple"
+    // se responde con lo de los 45 min ANTES de caer en precios/eventos.
     {
-      keywords: ["precio", "precios", "cuanto", "cuánto", "sale", "valor", "cuesta"],
+      keywords: [
+        "cuanto tiempo antes", "cuánto tiempo antes", "cuanto antes", "cuánto antes",
+        "cuanta anticipacion", "cuánta anticipación", "con cuanto tiempo", "con cuánto tiempo",
+        "antes puedo ir", "antes puedo entrar", "puedo ir antes", "puedo entrar antes",
+        "tiempo antes", "minutos antes", "horas antes", "hora antes",
+        "anticipacion", "anticipación",
+        "a que hora puedo ir", "a qué hora puedo ir", "a que hora puedo entrar", "a qué hora puedo entrar",
+        "se entrega", "entregan", "entrega el salon", "entrega el salón", "entrega del salon", "entrega del salón",
+        "decorar", "decoracion", "decoración", "acomodar", "ambientar", "preparar el salon", "preparar el salón",
+        "armar el salon", "armar el salón"
+      ],
+      reply:
+        `🎂 ¡Hola! Para que puedas acomodar y decorar tranquilo, te entregamos el salón *45 minutos antes* del horario reservado.\n\n` +
+        `Cualquier otra consulta, escribinos. ¡Te esperamos! 🙌`,
+    },
+    {
+      keywords: ["precio", "precios", "cuanto sale", "cuánto sale", "sale", "valor", "cuesta", "cuanto cuesta", "cuánto cuesta"],
       reply:
         `💰 *Precios:*\n` +
         `• ⚽ Fútbol 5: *$20.000* el turno (1 hora)\n` +
@@ -68,17 +86,6 @@ module.exports = {
       reply:
         `📍 Te esperamos en *La Canchita del Cani*.\n\n` +
         `Reservá tu turno online acá 👇\n{APP_URL}`,
-    },
-    {
-      keywords: [
-        "cuanto antes", "cuánto antes", "antes puedo ir", "antes puedo entrar",
-        "entregan", "entrega", "se entrega", "a que hora puedo ir", "a qué hora puedo ir",
-        "acomodar", "decorar", "ambientar", "armar", "puedo ir antes",
-        "anticipacion", "anticipación", "tiempo antes", "minutos antes", "horas antes"
-      ],
-      reply:
-        `🎂 ¡Hola! Para que puedas acomodar/decorar, te entregamos el salón *45 minutos antes* del horario reservado.\n\n` +
-        `Cualquier consulta más, escribinos. ¡Te esperamos! 🙌`,
     },
   ],
 
