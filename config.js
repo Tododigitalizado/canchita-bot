@@ -82,10 +82,17 @@ module.exports = {
         `Mirá disponibilidad y reservá con seña acá 👇\n{APP_URL}`,
     },
     {
-      keywords: ["ubicacion", "ubicación", "donde", "dónde", "direccion", "dirección", "como llego", "cómo llego"],
+      keywords: [
+        "ubicacion", "ubicación", "ubicados", "ubicado", "donde", "dónde", "donde queda", "dónde queda",
+        "donde estan", "dónde están", "donde es", "dónde es", "direccion", "dirección", "domicilio",
+        "que calle", "qué calle", "en que calle", "en qué calle", "como llego", "cómo llego",
+        "como llegar", "cómo llegar", "llegar", "mapa", "google maps", "maps"
+      ],
       reply:
-        `📍 Te esperamos en *La Canchita del Cani*.\n\n` +
-        `Reservá tu turno online acá 👇\n{APP_URL}`,
+        `📍 Estamos en *La Canchita del Cani*, en *Dante Alighieri 1675*.\n\n` +
+        `Cómo llegar (Google Maps) 👇\n` +
+        `https://maps.app.goo.gl/oTgETXymPvSoxfpB8\n\n` +
+        `Y si querés reservar tu turno online 👇\n{APP_URL}`,
     },
   ],
 
