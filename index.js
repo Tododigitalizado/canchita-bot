@@ -151,8 +151,18 @@ async function startSock() {
       connected = false;
       const code = lastDisconnect?.error?.output?.statusCode;
       const loggedOut = code === DisconnectReason.loggedOut;
-      console.log(`⚠️  Conexión cerrada (code ${code}).`, loggedOut ? "Sesión cerrada." : "Reconectando...");
-      if (!loggedOut) startSock();
+      if (loggedOut) {
+        // La sesión fue cerrada (ej: se desvinculó el WhatsApp desde el celu, o
+        // se cambió de número). Borramos las credenciales viejas y reiniciamos
+        // para que se genere un QR NUEVO y se pueda re-vincular otro número.
+        console.log("⚠️  Sesión cerrada (logout). Limpiando credenciales y generando QR nuevo...");
+        try { fs.rmSync(WA_AUTH, { recursive: true, force: true }); } catch {}
+        currentQR = null;
+        setTimeout(startSock, 1000);
+      } else {
+        console.log(`⚠️  Conexión cerrada (code ${code}). Reconectando...`);
+        startSock();
+      }
     }
   });
 
