@@ -179,8 +179,10 @@ async function startSock() {
           const id = msg.key.id;
           if (id && botSentIds.has(id)) {
             botSentIds.delete(id);   // lo mandó el bot → ignorar
-          } else {
-            // Lo mandó el ADMIN manualmente → pausar el bot en esa conversación
+          } else if (type === "notify") {
+            // Solo cuenta como intervención humana si es un mensaje NUEVO.
+            // (Al reconectar, WhatsApp sincroniza mensajes viejos y antes eso
+            // pausaba el bot por error con esos contactos.)
             const handoffH = Number(runtime.handoffHours ?? 12);
             const conv = conversations.get(jid) || { welcomed: true, history: [] };
             conv.pausedUntil = Date.now() + handoffH * 3600000;
