@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.69.0",
-    "@whiskeysockets/baileys": "^6.7.9",
+    "@whiskeysockets/baileys": "^6.7.24",
+    "pino": "^9.5.0",
     "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0",
-    "pino": "^9.5.0"
+    "qrcode-terminal": "^0.12.0"
   }
 }
