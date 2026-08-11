@@ -124,7 +124,9 @@ async function startSock() {
   sock = makeWASocket({
     version,
     auth: state,
-    logger: pino({ level: "silent" }),
+    // "warn" muestra errores reales de WhatsApp (sesión rota, claves, etc.)
+    // que antes quedaban ocultos con "silent".
+    logger: pino({ level: process.env.LOG_LEVEL || "warn" }),
     printQRInTerminal: false,
     markOnlineOnConnect: false,
   });
