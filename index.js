@@ -117,6 +117,20 @@ async function aiReply(jid, userText) {
 }
 
 // ─── Conexión a WhatsApp ──────────────────────────────────────────────
+// Arranque "blindado": si startSock falla (red, WhatsApp caído, etc.),
+// NO se cae el proceso — loguea el error y reintenta a los 5 segundos.
+function safeStart() {
+  startSock().catch((err) => {
+    console.error("Error iniciando la conexión (reintento en 5s):", err?.message || err);
+    setTimeout(safeStart, 5000);
+  });
+}
+
+// Que una promesa rechazada suelta no tumbe el proceso (Node 20 crashea por defecto)
+process.on("unhandledRejection", (err) => {
+  console.error("UnhandledRejection:", err?.message || err);
+});
+
 async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState(WA_AUTH);
   const { version } = await fetchLatestBaileysVersion();
@@ -160,10 +174,10 @@ async function startSock() {
         console.log("⚠️  Sesión cerrada (logout). Limpiando credenciales y generando QR nuevo...");
         try { fs.rmSync(WA_AUTH, { recursive: true, force: true }); } catch {}
         currentQR = null;
-        setTimeout(startSock, 1000);
+        setTimeout(safeStart, 1000);
       } else {
         console.log(`⚠️  Conexión cerrada (code ${code}). Reconectando...`);
-        startSock();
+        safeStart();
       }
     }
   });
@@ -349,7 +363,7 @@ const server = http.createServer((req, res) => {
     currentQR = null;
     sendJSON(res, 200, { ok: true });
     if (sock) { try { sock.end(); } catch {} }
-    setTimeout(startSock, 1000); // re-inicia → nuevo QR
+    setTimeout(safeStart, 1000); // re-inicia → nuevo QR
     return;
   }
 
@@ -358,7 +372,4 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => console.log(`🌐 API del bot escuchando en puerto ${PORT}`));
 
-startSock().catch((e) => {
-  console.error("Error fatal al iniciar el bot:", e);
-  process.exit(1);
-});
+safeStart();
